@@ -80,9 +80,6 @@ def prepare_data(args):
     else:
         raise ValueError("必须提供数据(args.data)")
     
-    # 预处理数据，填充缺失值，再删掉缺失太多的列。如果数据质量正常，都是不必要的操作
-    # data_processor.preprocess_data()
-    
     # 设置特征和目标
     if args.feature_cols is None:
         raise AttributeError("必须指定特征列列名")
@@ -214,14 +211,15 @@ def setup_deap_toolbox(pset, data_dict, args, history, device_info):
     toolbox.register("mate", gp.cxOnePoint)
 
     toolbox.register("expr_mut", gp.genGrow, min_=0, max_=2)
-    def mutUniformAndShrink(individual, expr, pset):
-        method = random.choice((0,1,2,3))
-        if method < 3:
-            return gp.mutUniform(individual=individual, expr=toolbox.expr_mut, pset=pset)
-        else:
+    def mutUniformAndShrink(individual, expr, pset, shrink_prob=0.25):
+        assert shrink_prob <= 1.0, ("提升变异在变异操作中的概率必须小于1")
+        op_choice = random.random()
+        if op_choice < shrink_prob:
             return gp.mutShrink(individual=individual)
+        else:
+            return gp.mutUniform(individual=individual, expr=toolbox.expr_mut, pset=pset)            
         
-    toolbox.register("mutate", mutUniformAndShrink, expr=toolbox.expr_mut, pset=pset)
+    toolbox.register("mutate", mutUniformAndShrink, expr=toolbox.expr_mut, pset=pset, shrink_prob=args.shrink_mutation_rate)
     
     # 设置突变和交叉的约束
     toolbox.decorate("mate", gp.staticLimit(key=operator.attrgetter("height"), max_value=args.max_depth))

@@ -1,0 +1,7 @@
+/__pycache__
+/barra
+/results*
+/runner
+features.parquet
+secucode_innercode.csv
+test.ipynb

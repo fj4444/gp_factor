@@ -57,37 +57,6 @@ class PandasDataProcessor(DataProcessorBase):
                 raise TypeError(f"weights_data是不支持的数据类型: {type(weights_data)}")
         
         print(f"加载DataFrame数据完成, 数据形状: {self.data.shape}")
-    
-    def preprocess_data(self, drop_na_threshold=None):
-        """
-        预处理数据
-        
-        参数:
-            drop_na_threshold: 删除缺失值比例超过阈值的列，None 表示不删除
-            
-        返回:
-            预处理后的数据框
-        """
-        if self.data is None:
-            raise ValueError("请先加载数据")
-    
-        # 复制数据，避免修改原始数据
-        data = self.data.copy()
-
-        # 删除缺失值比例超过阈值的列
-        if drop_na_threshold is not None:
-            # pandas 版本
-            na_ratio = data.isnull().mean()
-            cols_to_drop = na_ratio[na_ratio > drop_na_threshold].index.tolist()
-            
-            if cols_to_drop:
-                data = data.drop(columns=cols_to_drop)
-                print(f"删除缺失值比例超过 {drop_na_threshold} 的列: {cols_to_drop}")
-                print(f"删除后，形状: {data.shape}")
-        
-        # TODO:填充缺失值
-        # 数据质量还不错,没有无故缺失,实践上来说其实不需要,只是在这里留一个可操作的入口
-        self.data = data
 
     def split_data(self, test_size=0.3, time_series=True, time_col=None, id_col=None):
         """

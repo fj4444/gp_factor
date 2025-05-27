@@ -40,6 +40,7 @@ DEFAULT_CONFIG = {
         'tournament_size': 13,
         'crossover_rate': 0.65,
         'mutation_rate': 0.35,
+        'shrink_mutation_rate': 0.25,
         'hall_of_fame_size': 15,
         'random_seed': 42,
         'patience': 5,

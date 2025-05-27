@@ -293,8 +293,6 @@ def feature_engineering(args, data):
     )
     data.to_parquet("features.parquet")
 
-    # 把数据读取/特征工程/预测目标计算的整个过程中所有的删除操作全部整合到一起,降低耦合度
-    # TODO: 可以考虑把gp流程里最开头的preprocess_data也移到这里来
     data = clear_data(data)
 
     print("特征处理完毕")

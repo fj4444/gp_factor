@@ -1,0 +1,103 @@
+2015-05-01之后(在这之前没有逐笔数据 SMB特征全部为空) 除去停牌和ST 所有特征的NaN值的总数
+TradingDay,0
+SecuCode,0
+InnerCode,0
+OpenPrice,0
+ClosePrice,0
+HighPrice,0
+LowPrice,0
+PrevClosePrice,0
+TurnoverVolume,0
+TurnoverValue,0
+NonRestrictedShares,0
+DailyReturn,0
+IfSuspended,0
+IfSpecialTrade,0
+MarketClosePrice,0
+MarketPrevClosePrice,0
+MarketChangePCT,0
+HighPrice_adj,0
+LowPrice_adj,0
+OpenPrice_adj,0
+ClosePrice_adj,0
+LnTurnoverVolume,0
+LnTurnoverValue,0
+Overnight,0
+TurnoverRate,0
+Amplitude,0
+VWAP,0
+Amihud,0
+early_ret,0
+tail_ret,0
+max_ret,0
+min_ret,0
+mean_ret,0
+intra_vol,0
+intra_skew,0
+runner_value_321,0
+runner_value_320,0
+runner_value_186,0
+runner_value_212,0
+runner_value_211,0
+runner_value_268,0
+runner_value_283,0
+runner_value_195,0
+runner_value_177,0
+runner_value_199,0
+runner_value_314,0
+runner_value_191,0
+runner_value_292,0
+runner_value_304,0
+runner_value_201,0
+runner_value_297,0
+runner_value_188,0
+runner_value_315,0
+runner_value_193,0
+runner_value_322,0
+runner_value_350,0
+runner_value_179,0
+runner_value_286,0
+runner_value_197,0
+runner_value_318,0
+runner_value_269,0
+runner_value_319,0
+runner_value_181,0
+runner_value_347,0
+runner_value_183,0
+runner_value_302,0
+runner_value_267,0
+S,0
+M,0
+B,0
+SB,0
+lnto,0
+lncret,0
+lncoret,0
+lnhlret,0
+tr,0
+ex_lnret,0
+vwap,0
+apb,8 完全没有交易,apb没有意义
+day_freq_apb,0
+rskew,79 完全没有交易&只有一/二/三个时间区间有交易,数据点少于三个,算不出偏度
+sqrskew,79
+vhhi,8 完全没有交易
+rvol,77 完全没有交易&只有一/二个时间区间有交易,数据点少于二个,算不出偏度
+sqrvol,77
+arpp,46610 一天内交易价格完全相同,算不出arpp
+ret20,0
+vol20,5223 min_periods=2,有空值
+ppreversal,0
+maxret20,177074 min_periods=3,有空值
+ivol20,10447
+ivr20,10447
+lnto_20d,0
+lnamihud20,0
+FutureCumReturn,29965
+vskew,8 完全没有交易, volume全是0
+rkurt,2572 只有四个或更少时间区间有交易
+vvol,0
+sqvvol,0
+retjump,77 完全没有交易&只有一/二个时间区间有交易,close_price数据点少于2个
+retmod,77
+dtype: int64

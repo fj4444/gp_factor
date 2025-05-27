@@ -122,6 +122,8 @@ def parse_args():
     gp_group.add_argument('--tournament_size', type=int, default=gp_config['tournament_size'], help='锦标赛选择的大小')
     gp_group.add_argument('--crossover_rate', type=float, default=gp_config['crossover_rate'], help='交叉概率')
     gp_group.add_argument('--mutation_rate', type=float, default=gp_config['mutation_rate'], help='变异概率')
+    gp_group.add_argument('--shrink_mutation_rate', type=float, default=gp_config['shrink_mutation_rate'], help='提升变异在变异操作中的概率')
+    #如果mutation_rate设置为0.4,shrink_mutation_rate设置为0.25,则最终会有0.6的交叉概率, 0.3的子树变异概率, 0.1的提升变异概率
     gp_group.add_argument('--hall_of_fame_size', type=int, default=gp_config['hall_of_fame_size'], help='名人堂大小')
     gp_group.add_argument('--patience', type=int, default=gp_config['patience'], help='早停轮次限制')
     gp_group.add_argument('--min_delta', type=float, default=gp_config['min_delta'], help='早停提升度限制')
