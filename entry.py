@@ -124,11 +124,13 @@ def parse_args():
     gp_group.add_argument('--mutation_rate', type=float, default=gp_config['mutation_rate'], help='变异概率')
     gp_group.add_argument('--shrink_mutation_rate', type=float, default=gp_config['shrink_mutation_rate'], help='提升变异在变异操作中的概率')
     #如果mutation_rate设置为0.4,shrink_mutation_rate设置为0.25,则最终会有0.6的交叉概率, 0.3的子树变异概率, 0.1的提升变异概率
+    gp_group.add_argument('--correlation_threshold_init', type=float, default=gp_config['correlation_threshold_init'], help='初始种群热启动相关性阈值,超过此值的因子将被过滤')
+    gp_group.add_argument('--correlation_threshold', type=float, default=gp_config['correlation_threshold'], help='迭代过程中因子相关性阈值,超过此值的因子将被过滤')
+    gp_group.add_argument('--dynamicProb', action='store_true', help='是否在进化中根据筛选后的种群多样性动态调整变异概率')
     gp_group.add_argument('--hall_of_fame_size', type=int, default=gp_config['hall_of_fame_size'], help='名人堂大小')
     gp_group.add_argument('--patience', type=int, default=gp_config['patience'], help='早停轮次限制')
     gp_group.add_argument('--min_delta', type=float, default=gp_config['min_delta'], help='早停提升度限制')
-    gp_group.add_argument('--correlation_threshold_init', type=float, default=gp_config['correlation_threshold_init'], help='初始种群热启动相关性阈值,超过此值的因子将被过滤')
-    gp_group.add_argument('--correlation_threshold', type=float, default=gp_config['correlation_threshold'], help='迭代过程中因子相关性阈值,超过此值的因子将被过滤')
+    gp_group.add_argument('--competition', action='store_true', help='选择下一轮进化的亲代时,是否进行亲子竞争')
     
     # 适应度参数
     fitness_group = parser.add_argument_group('适应度参数')

@@ -354,9 +354,9 @@ def filter_correlated_individuals_daily(population, factor_values, factor_ic_val
     
     return filtered_population
 
-def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, history, stats=None, halloffame=None, verbose=__debug__, patience=5, min_delta=0.001,use_warm_start=False, 
-                                    correlation_threshold=0.6, correlation_threshold_init=0.4, pset=None, feature_data=None, use_gpu=False, n_jobs=1, global_pool=None, 
-                                    experiment_name=None, output_dir=None, barra_values=None, barra_usage='correlation', weights=None):
+def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, history, stats=None, halloffame=None, verbose=__debug__, use_warm_start=False, 
+                                    correlation_threshold=0.6, correlation_threshold_init=0.4, dynamicProb=True, patience=5, min_delta=0.001,pset=None, feature_data=None, 
+                                    use_gpu=False, n_jobs=1, global_pool=None, experiment_name=None, output_dir=None, barra_values=None, barra_usage='correlation', weights=None, competition=True):
     """
     带有早期停止功能的(μ+λ)进化策略
     
@@ -372,11 +372,12 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
         stats: 统计对象
         halloffame: 名人堂对象
         verbose: 是否输出详细信息
-        patience: 早期停止耐心值，连续多少代没有改善就停止 
-        min_delta: 最小改善阈值，适应度提升小于此值视为没有显著改善
         use_warm_start: 初始种群是否使用了热启动，如果未使用，跳过第一轮筛选
         correlation_threshold: 相关性阈值，超过此值的因子将被过滤
         correlation_threshold_init: 热启动后初始种群的相关性阈值
+        dynamicProb: 是否根据筛选后的多样性动态调整变异概率大小
+        patience: 早期停止耐心值，连续多少代没有改善就停止 
+        min_delta: 最小改善阈值，适应度提升小于此值视为没有显著改善
         pset: 原始集，用于计算因子相关性
         feature_data: 特征数据，用于计算因子相关性
         use_gpu: 是否使用GPU
@@ -387,7 +388,7 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
         barra_values: 训练集对应的风格因子值,是特征ndarray组成的dict, 如果启动参数里没有use_barra, 就是None
         barra_usage: barra风格因子的用法, correlation代表计算和因子的相关性作为惩罚项, neutralize代表将因子值WLS回归到风格因子上,用残差做因子值
         weights: 训练集对应的风格因子加权中性化的权重,设置为sqrt(float market value), 如果启动参数里没有use_barra, 就是None
-
+        competition: 是否进行亲子竞争
     返回:
         (最终种群, 日志)
     """
@@ -493,11 +494,12 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
         filtered_offspring = filter_correlated_individuals_daily(
             offspring, factor_values, ic_array_list, len(halloffame), pset, feature_data, correlation_threshold, use_gpu, global_pool=global_pool, n_jobs=n_jobs)[:lambda_]
 
+        if dynamicProb:
         # 动态调整进化中的变异概率，在多样性不足时提高多样性
-        # if len(filtered_offspring) < mu:
-        #     delta = (cxpb-0.2)*0.5
-        #     mutpb += delta
-        #     cxpb -= delta
+            if len(filtered_offspring) < mu:
+                delta = (cxpb-0.2)*0.5
+                mutpb += delta
+                cxpb -= delta
 
         with open(os.path.join(experiment_dir, "generations.txt"), 'a', encoding='utf-8') as file:
             file.write(f"筛选后的第{gen}代种群:\n")
@@ -532,21 +534,21 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
             break
 
         # 选择下一次遗传的亲代
+        if competition:
         # 父子竞争,对所有进入filtered_offspring的子代,如果发现适应度高于亲代,就把亲代从population中去掉
-        parents_to_remove = []
-        for ind in filtered_offspring:
-            for parent_id in list(history.getGenealogy(ind,1).values())[0]:
-                parent_entity = history.genealogy_history[parent_id]
-                if ind.fitness.values[0] > parent_entity.fitness.values[0]:
-                    if parent_entity not in parents_to_remove:
-                        parents_to_remove.append(parent_entity)
+            parents_to_remove = []
+            for ind in filtered_offspring:
+                for parent_id in list(history.getGenealogy(ind,1).values())[0]:
+                    parent_entity = history.genealogy_history[parent_id]
+                    if ind.fitness.values[0] > parent_entity.fitness.values[0]:
+                        if parent_entity not in parents_to_remove:
+                            parents_to_remove.append(parent_entity)
 
-        population = [entity for entity in population if entity not in parents_to_remove]
-        if len(population)==0:
-            population = toolbox.population(n=lambda_)
-        
-        print(f"在第{gen}代亲子竞争中,删去{len(parents_to_remove)}个亲代个体")
-        
+            population = [entity for entity in population if entity not in parents_to_remove]
+            print(f"在第{gen}代亲子竞争中,删去{len(parents_to_remove)}个亲代个体")
+            if len(population)==0:
+                print(f"亲子竞争后亲代全部被删除,重新生成{lambda_}个亲代")
+                population = toolbox.population(n=lambda_)           
             
         population[:] = toolbox.select(population, (lambda_-mu)) + toolbox.select(filtered_offspring, mu)
         gen = gen + 1
@@ -636,11 +638,12 @@ def run_gp(args, data_dict, device_info):
         stats=stats, 
         halloffame=hof, 
         verbose=args.verbose,
-        patience=args.patience if hasattr(args, 'patience') else 5,
-        min_delta=args.min_delta if hasattr(args, 'min_delta') else 0.001,
         use_warm_start=args.use_warm_start,
         correlation_threshold=args.correlation_threshold if hasattr(args, 'correlation_threshold') else 0.6,
         correlation_threshold_init=args.correlation_threshold_init if hasattr(args, 'correlation_threshold_init') else 0.4,
+        dynamicProb=args.dynamicProb,
+        patience=args.patience if hasattr(args, 'patience') else 5,
+        min_delta=args.min_delta if hasattr(args, 'min_delta') else 0.001,
         pset=pset,  # 直接传递原始集
         feature_data=data_dict['train_feature_data'],  # 直接传递特征数据
         use_gpu=args.use_gpu if hasattr(args, 'use_gpu') else False,
@@ -650,7 +653,8 @@ def run_gp(args, data_dict, device_info):
         output_dir=args.output_dir if hasattr(args, 'output_dir') else 'results',
         barra_values=barra_values,
         barra_usage=args.barra_usage,
-        weights=weights
+        weights=weights,
+        competition=args.competition
     )
     
     end_time = time.time()
