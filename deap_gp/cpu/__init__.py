@@ -7,7 +7,7 @@ CPU实现模块
 """
 
 from .operators import (
-    setup_primitives, setup_advanced_primitives, calculate_expression
+    setup_advanced_primitives, calculate_expression
 )
 
 from .fitness import (

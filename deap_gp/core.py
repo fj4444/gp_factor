@@ -23,7 +23,7 @@ from deap import creator, base, gp, tools, algorithms
 
 from . import select_device_strategy, TORCH_AVAILABLE, NUMBA_AVAILABLE, RAPIDS_AVAILABLE
 from .base.setup import create_pset
-from .custom_generators import genHalfAndHalf_with_constraints, genFull_with_constraints
+# from .custom_generators import genHalfAndHalf_with_constraints, genFull_with_constraints
 
 def process_map_with_tqdm(func, task, global_pool=None, desc=None):
     total = len(task)
@@ -143,7 +143,10 @@ def prepare_data(args):
 
 # 基本回填函数
 def base_calculate(device_name, pset, feature_data, ind):
-    from .cpu import operators as operators_module
+    if device_name=='gpu':
+        from .gpu import operators as operators_module
+    else:
+        from .cpu import operators as operators_module
     return operators_module.calculate_expression(ind, pset=pset, feature_data=feature_data)
 
 # 基本评估函数
@@ -152,7 +155,10 @@ def base_evaluate(device_name, returns, metric, value):
     这个函数经过了多层包装，在toolbox的register获得了前三个参数，在toolbox.map才能获得最后一个参数，也只能获得一个参数
     所以因子值ndarray和包含风格因子值ndarray的字典作为一个tuple一起传到values里了，如果初始设置没有要求使用风格因子，那么value就是(factor_value,None)
     """
-    from .cpu import fitness as fitness_module
+    if device_name=='gpu':
+        from .gpu import fitness as fitness_module
+    else:
+        from .cpu import fitness as fitness_module
     factor_value, barra_values, barra_usage, weights = value
     return fitness_module.evaluate_individual(factor_value, returns=returns, metric=metric, barra_values=barra_values, barra_usage=barra_usage, weights=weights)
 
@@ -671,15 +677,12 @@ def run_gp(args, data_dict, device_info):
     print("评估所有名人堂个体在测试集上的表现...")
     
     # 准备GPU测试数据（如果使用GPU）
-    if device_info['device'] == 'gpu' and TORCH_AVAILABLE:
-        from .gpu.operators import convert_to_torch_tensors
-        torch_test_feature_data = convert_to_torch_tensors(data_dict['test_feature_data'])
+    # if device_info['device'] == 'gpu' and TORCH_AVAILABLE:
+    #     from .gpu.operators import convert_to_torch_tensors
+    #     torch_test_feature_data = convert_to_torch_tensors(data_dict['test_feature_data'])
 
     if global_pool is not None and args.n_jobs > 1:
-        # 回填每个名人堂个体
-        # 先在测试集回填，等一下要拿去计算测试集适应度
         hof_factor_values = global_pool.starmap(base_calculate, [(device_info['device'], pset, data_dict['test_feature_data'], individual) for individual in hof])
-        # 评估每个名人堂个体
         test_ic_arrays = global_pool.starmap(fitness_module.calculate_ic, [(hof_factor_value, data_dict['y_test']) for hof_factor_value in hof_factor_values])
     else:
         warnings.warn("未设置多进程，使用单进程回填并评估hof在测试集的表现")
@@ -688,7 +691,6 @@ def run_gp(args, data_dict, device_info):
         test_ic_arrays = list(starmap(fitness_module.calculate_ic, [[hof_factor_value, data_dict['y_test']] for hof_factor_value in hof_factor_values]))
 
     test_ic = [np.abs(np.mean(ic_array)) for ic_array in test_ic_arrays]
-    # hof_test_metrics = [{'ic': ic, 'icir': icir} for (ic,icir) in zip(test_ic, test_icir)]
     
     # 关闭进程池
     if global_pool is not None:
@@ -705,8 +707,6 @@ def run_gp(args, data_dict, device_info):
     print(f"最佳表达式 (原始特征名): {get_expression_with_original_names(str(hof[0]), data_dict['feature_dict'])}")
     print(f"训练集适应度: {hof[0].fitness.values[0]:.4f}")
     print(f"最佳个体测试集IC: {test_ic[0]:.4f}")
-
-    # hof_factor_values.extend(hof_factor_train_values)   
     
     # 保存结果
     save_results(args, pop, hof, hof_factor_values, log, pset, data_dict, {

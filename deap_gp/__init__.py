@@ -22,25 +22,23 @@ RAPIDS_AVAILABLE = False
 try:
     import torch
     TORCH_AVAILABLE = True
-    print("PyTorch 可用")
+    print("PyTorch 导入成功")
 except ImportError:
-    warnings.warn("PyTorch 不可用")
+    warnings.warn("PyTorch 不可用，gpu计算可能无法加速")
 
 # 尝试导入 RAPIDS 库
 try:
     import cudf
     import cupy as cp
     RAPIDS_AVAILABLE = True
-    print("RAPIDS 可用")
 except ImportError:
-    warnings.warn("RAPIDS 不可用,将使用 pandas 进行数据处理")
+    warnings.warn("RAPIDS 不可用，gpu计算可能无法加速")
 
 try:
     import numba as nb
     NUMBA_AVAILABLE = True
-    print("Numba 可用,将使用 JIT 编译加速")
 except ImportError:
-    warnings.warn("Numba 不可用,将使用原始 Python 进行计算")
+    warnings.warn("Numba 不可用，部分加速将失效")
 
 
 # 设备选择函数
@@ -87,3 +85,5 @@ def select_device_strategy(use_gpu=False):
 
 # 导出主要接口
 from .core import main
+from .cpu import operators as cpu_ops
+from .gpu import operators as gpu_ops
