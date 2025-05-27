@@ -403,31 +403,29 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
     logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
 
     # 评估初始种群
-    invalid_ind = [ind for ind in population if not ind.fitness.valid]
     if not use_gpu:
-        factor_values = toolbox.map(toolbox.calculate, invalid_ind, global_pool=global_pool, desc="初始种群-回填因子值")
+        factor_values = toolbox.map(toolbox.calculate, population, global_pool=global_pool, desc="初始种群-回填因子值")
         # 实验中发现诸如rank_sub(x54, x54)这样的因子，由于因子值只有0，在相关性计算的时候必然算出NaN，从而通过筛选留下，会持续污染population。应该把因子值只有少数几种值,缺少区分度的因子直接从种群里删掉
         useless_factor_indice = [i for i,factor_value in enumerate(factor_values) if (len(np.unique(factor_value))<=5)]
         
         for index in sorted(useless_factor_indice, reverse=True):
             del population[index]
             del factor_values[index]
-            del invalid_ind[index]
             
         print(f"删去无用因子后后剩余: {len(population)}/{len(population)+len(useless_factor_indice)} 个体")
 
-        # ! factor_values是list, 每个元素都是一个因子值的ndarray, 应该把每个元素包装成(factor_value, barra_values)的元组,
-        # ! 其中barra_values应该是用到的所有风格因子的ndarray组成的dict,如果设置里不要求风格因子,barra_values=None
+        #  factor_values是list, 每个元素都是一个因子值的ndarray, 应该把每个元素包装成(factor_value, barra_values)的元组,
+        #  其中barra_values应该是用到的所有风格因子的ndarray组成的dict,如果设置里不要求风格因子,barra_values=None
         factor_barra_values = [(factor_value, barra_values, barra_usage, weights) for factor_value in factor_values]
         fitness, ic_array_tuple = list(zip(*toolbox.map(toolbox.evaluate, factor_barra_values, global_pool=global_pool, desc="初始种群-评估适应度")))
 
     ic_array_list = list(ic_array_tuple)
-    for ind, fit in zip(invalid_ind, fitness):
+    for ind, fit in zip(population, fitness):
         ind.fitness.values = fit
 
     # 统计初始种群信息
     record = stats.compile(population) if stats else {}
-    logbook.record(gen=0, nevals=len(invalid_ind), **record)
+    logbook.record(gen=0, nevals=len(population), **record)
     if verbose:
         print(logbook.stream)
 
@@ -465,19 +463,16 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
     # 开始进化循环
     while gen < ngen + 1:
         print(f"本代有{len(population)}个个体作为亲代")
-        # !varOr包含mutate, crossover和reproduction操作, 其中reproduction会直接从亲代里随机选几个变成子代, 
-        # !这些直接变成子代的个体, fitness.valid仍然是True, 回填的时候会被漏掉, 之后在filter里, population的个体会比factor_values多,所以暂时让crossover和mutate的概率之和为1
         offspring = algorithms.varOr(population, toolbox, lambda_, cxpb, mutpb)        
         # 评估子代
-        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-        # 使用描述性标签，添加代数信息
-        factor_values = toolbox.map(toolbox.calculate, invalid_ind, global_pool=global_pool, desc=f"第{gen}代-回填因子值")
+        # 这里对全部offspring中的个体都进行回填。严格来说，如果cxpb+mutpb<1，是有机会节省一些计算的，因为多余的概率会用于reproduction，直接从亲代里随机选几个变成子代
+        # 这些直接变成子代的个体，本身已经回填过一次，但是因子值不方便找到，还是跟着重算一次
+        factor_values = toolbox.map(toolbox.calculate, offspring, global_pool=global_pool, desc=f"第{gen}代-回填因子值")
         useless_factor_indice = [i for i,factor_value in enumerate(factor_values) if (len(np.unique(factor_value))<=5)]
         
         for index in sorted(useless_factor_indice, reverse=True):
             del offspring[index]
             del factor_values[index]
-            del invalid_ind[index]
             
         print(f"删去无用因子后后剩余: {len(offspring)}/{len(offspring)+len(useless_factor_indice)} 个体")
         
@@ -486,12 +481,12 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
 
         ic_array_list = list(ic_array_tuple)
 
-        for ind, fit in zip(invalid_ind, fitness):
+        for ind, fit in zip(offspring, fitness):
             ind.fitness.values = fit
 
         # 记录统计信息
         record = stats.compile(offspring) if stats else {}
-        logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+        logbook.record(gen=gen, nevals=len(offspring), **record)
         if verbose:
             print(logbook.stream)
 
@@ -518,6 +513,7 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
         halloffame.update(filtered_offspring)  
         offspring.extend(old_hof)
         hofer_indices = [offspring.index(hofer) if hofer in offspring else np.inf for hofer in halloffame]
+        # hof个体都应该来自上一轮hof或者本轮生成的子代，index不应该出现np.inf，如果出现了np.inf会被catch并报错
         try:
             hof_factor_values = [factor_values[i] for i in hofer_indices]
             hof_ic_array_list = [ic_array_list[i] for i in hofer_indices]

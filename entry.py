@@ -155,7 +155,7 @@ def parse_args():
     # 其他参数
     other_group = parser.add_argument_group('其他参数')
     other_group.add_argument('--random_seed', type=int, default=gp_config['random_seed'], help='随机种子')
-    other_group.add_argument('--verbose', action='store_true', help='是否输出详细信息')
+    other_group.add_argument('--verbose', type=bool, default=__debug__, help='是否输出详细信息')
     
     return parser.parse_args()
 
