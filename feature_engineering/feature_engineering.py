@@ -46,7 +46,7 @@ def process_group(group_data, market_returns):
     # 计算各种滚动特征
     result['ret20'] = group_data['DailyReturn'].rolling(window=20, min_periods=1).sum() #停牌DailyReturn=0 不影响
     result['vol20'] = group_data['DailyReturn'].rolling(window=20, min_periods=2).std() 
-    result['ppreversal'] = group_data['ClosePrice'].rolling(window=5, min_periods=1).mean() / group_data['ClosePrice'].rolling(window=60, min_periods=1).mean() - 1 #closeprice没有空值也没有0, 停牌不影响
+    result['ppreversal'] = group_data['ClosePrice_adj'].rolling(window=5, min_periods=1).mean() / group_data['ClosePrice_adj'].rolling(window=60, min_periods=1).mean() - 1 #closeprice没有空值也没有0, 停牌不影响
     result['maxret20'] = max_n_mean(group_data['DailyReturn'], 20, 3)
     
     # 特质波动率
@@ -150,12 +150,13 @@ def feature_engineering(args, data):
     
     # 计算真实波动范围
     data['tr'] = np.maximum(
-        data['HighPrice'] - data['LowPrice'],
+        data['HighPrice_adj'] - data['LowPrice_adj'],
         np.maximum(
-            abs(data['HighPrice'] - data['PrevClosePrice']),
-            abs(data['LowPrice'] - data['PrevClosePrice'])
+            abs(data['HighPrice_adj'] - data['PrevClosePrice_adj']),
+            abs(data['LowPrice_adj'] - data['PrevClosePrice_adj'])
         )
-    )/data['PrevClosePrice'] #涨跌停的High=Low,早年也有21条High=Low=PrevClose的数据;完全不存在PrevClose=0的数据
+    )/data['PrevClosePrice_adj'] #涨跌停的High=Low,早年也有21条High=Low=PrevClose的数据;完全不存在PrevClose=0的数
+    据
     data['ex_lnret'] = data['lncret'] - np.log(data['MarketChangePCT']/100 + 1) #marketchangePCT没有极端值
     
 
@@ -226,8 +227,6 @@ def feature_engineering(args, data):
             print(f"没有处理到{data_type}数据。请检查数据可用性。")
     
     print(f"数据加载完成")
-
-
 
     # 将市场收益率转换为小数
     market_returns = data['MarketChangePCT'] / 100

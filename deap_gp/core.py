@@ -94,8 +94,8 @@ def prepare_data(args):
         target_col = args.return_col
     
     data_processor.set_features_and_target(features=feature_cols, target=target_col)
-    # !这一步之后feature_cols就不应该再用了，因为feature_cols是config里设置的所有可能存在的特征，但如果只加载了一部分数据，真正能用的特征会是feature_cols的子集
-    # !set_features_and_target里会给data_processor对象的features成员赋值为数据中真正包含的特征列表
+    # 这一步之后feature_cols就不应该再用了，因为feature_cols是config里设置的所有可能存在的特征，但如果只加载了一部分数据，真正能用的特征会是feature_cols的子集
+    # set_features_and_target里会给data_processor对象的features成员赋值为数据中真正包含的特征列表
 
     # 按时间分割原始特征数据和barra风格因子数据
     data_processor.split_data(
@@ -215,7 +215,6 @@ def setup_deap_toolbox(pset, data_dict, args, history, device_info):
         toolbox.register("select", tools.selTournament, tournsize=args.tournament_size)
 
     toolbox.register("mate", gp.cxOnePoint)
-
     toolbox.register("expr_mut", gp.genGrow, min_=0, max_=2)
     def mutUniformAndShrink(individual, expr, pset, shrink_prob=0.25):
         assert shrink_prob <= 1.0, ("提升变异在变异操作中的概率必须小于1")
