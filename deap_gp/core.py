@@ -159,8 +159,8 @@ def base_evaluate(device_name, returns, metric, value):
         from .gpu import fitness as fitness_module
     else:
         from .cpu import fitness as fitness_module
-    factor_value, barra_values, barra_usage, weights = value
-    return fitness_module.evaluate_individual(factor_value, returns=returns, metric=metric, barra_values=barra_values, barra_usage=barra_usage, weights=weights)
+    factor_value, barra_values, barra_factor, barra_usage, weights = value
+    return fitness_module.evaluate_individual(factor_value, returns=returns, metric=metric, barra_values=barra_values, barra_factor=barra_factor, barra_usage=barra_usage, weights=weights)
 
 def setup_deap_toolbox(pset, data_dict, args, history, device_info):
     """
@@ -361,7 +361,7 @@ def filter_correlated_individuals_daily(population, factor_values, n_hof, pset, 
 
 def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, history, stats=None, halloffame=None, verbose=__debug__, use_warm_start=False, 
                                     correlation_threshold=0.6, correlation_threshold_init=0.4, iccorr=True, dynamicProb=True, patience=5, min_delta=0.001,pset=None, feature_data=None, 
-                                    use_gpu=False, n_jobs=1, global_pool=None, experiment_name=None, output_dir=None, barra_values=None, barra_usage='correlation', weights=None, competition=True):
+                                    use_gpu=False, n_jobs=1, global_pool=None, experiment_name=None, output_dir=None, barra_values=None, barra_factor=None, barra_usage='correlation', weights=None, competition=True):
     """
     带有早期停止功能的(μ+λ)进化策略
     
@@ -392,6 +392,7 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
         experiment_name: 实验名称，也是因子记录的文件名称
         output_dir: 记录输出目录
         barra_values: 训练集对应的风格因子值,是特征ndarray组成的dict, 如果启动参数里没有use_barra, 就是None
+        barra_factor: 打算用在barra中性化/相关性计算中的barra风格因子的名字构成的list
         barra_usage: barra风格因子的用法, correlation代表计算和因子的相关性作为惩罚项, neutralize代表将因子值WLS回归到风格因子上,用残差做因子值
         weights: 训练集对应的风格因子加权中性化的权重,设置为sqrt(float market value), 如果启动参数里没有use_barra, 就是None
         competition: 是否进行亲子竞争
@@ -415,7 +416,7 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
 
         #  factor_values是list, 每个元素都是一个因子值的ndarray, 应该把每个元素包装成(factor_value, barra_values)的元组,
         #  其中barra_values应该是用到的所有风格因子的ndarray组成的dict,如果设置里不要求风格因子,barra_values=None
-        factor_barra_values = [(factor_value, barra_values, barra_usage, weights) for factor_value in factor_values]
+        factor_barra_values = [(factor_value, barra_values, barra_factor, barra_usage, weights) for factor_value in factor_values]
         fitness, ic_array_tuple = list(zip(*toolbox.map(toolbox.evaluate, factor_barra_values, global_pool=global_pool, desc="初始种群-评估适应度")))
 
     ic_array_list = list(ic_array_tuple)
@@ -475,7 +476,7 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
             
         print(f"删去无用因子后后剩余: {len(offspring)}/{len(offspring)+len(useless_factor_indice)} 个体")
         
-        factor_barra_values = [(factor_value, barra_values, barra_usage, weights) for factor_value in factor_values]
+        factor_barra_values = [(factor_value, barra_values, barra_factor, barra_usage, weights) for factor_value in factor_values]
         fitness, ic_array_tuple = zip(*toolbox.map(toolbox.evaluate, factor_barra_values, global_pool=global_pool, desc=f"第{gen}代-评估适应度"))
 
         ic_array_list = list(ic_array_tuple)
@@ -655,6 +656,7 @@ def run_gp(args, data_dict, device_info):
         experiment_name=args.experiment_name if hasattr(args, 'experiment_name') else 'test',
         output_dir=args.output_dir if hasattr(args, 'output_dir') else 'results',
         barra_values=barra_values,
+        barra_factor=args.barra_factor,
         barra_usage=args.barra_usage,
         weights=weights,
         competition=args.competition

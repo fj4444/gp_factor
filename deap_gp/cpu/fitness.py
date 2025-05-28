@@ -408,7 +408,7 @@ def setup_deap_fitness(maximize=True):
 
 # ====================== DEAP 适应度计算 ======================
 
-def evaluate_individual(factor_values, returns, metric, quantiles=10, barra_values=None, barra_usage='correlation', weights=None):
+def evaluate_individual(factor_values, returns, metric, quantiles=10, barra_values=None, barra_factor=None, barra_usage='correlation', weights=None):
     """
     评估个体适应度
     
@@ -418,6 +418,7 @@ def evaluate_individual(factor_values, returns, metric, quantiles=10, barra_valu
         metric: 适应度指标
         quantiles: 计算NDCG时分组数量
         barra_values: 风格因子ndarray构成的字典
+        barra_factor: 打算用到的风格因子的名字构成的list
         barra_usage: 风格因子的用法，计算correlation或者用wls neutralize
         weights: WLS用到的权重
     返回:
@@ -437,7 +438,7 @@ def evaluate_individual(factor_values, returns, metric, quantiles=10, barra_valu
     if barra_values is not None:
         if barra_usage == 'neutralize':
             # 对因子进行风格中性化
-            factor_values = neutralize_matrix(factor_values,[barra_values['rv'],barra_values['liquidity']],weights=weights)
+            factor_values = neutralize_matrix(factor_values,[barra_values[name] for name in barra_factor],weights=weights)
 
         else:
         # 计算适应度

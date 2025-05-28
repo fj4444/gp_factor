@@ -96,6 +96,7 @@ def parse_args():
     # 风格因子参数
     barra_group = parser.add_argument_group('风格因子参数 (仅在 --use_barra 时使用)')
     barra_group.add_argument('--barra_file', type=str, default=barra_config['barra_file'], help='风格因子文件路径')
+    barra_group.add_argument('--barra_factor', type=str, default=barra_config['barra_factor'], help='barra file中包含的、打算在中性化中用到的风格因子的名称,用逗号分隔')
     barra_group.add_argument('--barra_usage', type=str, default=barra_config['barra_usage'], choices=['correlation','neutralize'], help='barra风格惩罚的用法, 相关系数惩罚或者回归中性化')
     barra_group.add_argument('--weights_file', type=str, default=barra_config['weights_file'], help='权重文件路径')
     
@@ -243,6 +244,7 @@ if __name__ == "__main__":
         weights_data = data_with_barra_n_weights[weighst_data_columns]
         args.barra_data = barra_data
         args.weights_data = weights_data
+        args.barra_factor = args.barra_factor.split(',')
 
     args.data = data
 

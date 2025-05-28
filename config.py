@@ -60,6 +60,7 @@ DEFAULT_CONFIG = {
     },
     'barra': {
         'barra_file': "/data/home/jiamuxie/test/gp_proj_restructured/barra/barra.csv",
+        'barra_factor': "liquidity,rv",
         'barra_usage': "correlation",
         'weights_file': "/data/home/jiamuxie/test/gp_proj_restructured/barra/weights.csv",
     }
