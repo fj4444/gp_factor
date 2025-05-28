@@ -155,8 +155,7 @@ def feature_engineering(args, data):
             abs(data['HighPrice_adj'] - data['PrevClosePrice_adj']),
             abs(data['LowPrice_adj'] - data['PrevClosePrice_adj'])
         )
-    )/data['PrevClosePrice_adj'] #涨跌停的High=Low,早年也有21条High=Low=PrevClose的数据;完全不存在PrevClose=0的数
-    据
+    )/data['PrevClosePrice_adj'] #涨跌停的High=Low,早年也有21条High=Low=PrevClose的数据;完全不存在PrevClose=0的数据
     data['ex_lnret'] = data['lncret'] - np.log(data['MarketChangePCT']/100 + 1) #marketchangePCT没有极端值
     
 

@@ -327,14 +327,13 @@ factors_neut = [
     # "综合",
 ]
 
-def neutralize_matrix(factor, barra1, barra2, weights=None, add_constant=True, standardize_after_neut=True):
+def neutralize_matrix(factor, barras, weights=None, add_constant=True, standardize_after_neut=True):
     """
     对矩阵的每一行(时间点)分别进行回归中性化
     
     参数:
     - factor: 形状为(T, N)的原始矩阵，T是时间点数，N是股票数
-    - barra1: 形状为(T, N)的第一个因子矩阵
-    - barra2: 形状为(T, N)的第二个因子矩阵
+    - barras: 形状为(T, N)的Barra风格因子矩阵构成的list
     - weights: 可选的权重矩阵，形状为(T, N)
     - add_constant: 是否添加常数项
     - standardize_after_neut: 是否对残差进行zscore标准化
@@ -348,8 +347,8 @@ def neutralize_matrix(factor, barra1, barra2, weights=None, add_constant=True, s
     # 对每个时间点分别进行回归
     for t in range(T):
         # 提取当前时间点的数据
-        y = factor[t, :]  # 当前时间点的收益率(N,)
-        X = np.column_stack([barra1[t, :], barra2[t, :]])  # 因子数据(N, 2)
+        y = factor[t, :]  # 当前时间点的因子值(N,)
+        X = np.column_stack([barra[t,:] for barra in barras]) # Barra因子数据(N, k), k=len(barras)
         
         # 添加常数项
         if add_constant:
@@ -363,16 +362,13 @@ def neutralize_matrix(factor, barra1, barra2, weights=None, add_constant=True, s
         y_valid = y[mask]
         X_valid = X[mask, :]
         
-        # 处理权重
         if weights is not None:
             w_valid = weights[t, :][mask]
-            # 使用加权最小二乘回归
             model = sm.WLS(y_valid, X_valid, weights=w_valid).fit()
         else:
-            # 使用普通最小二乘回归
             model = sm.OLS(y_valid, X_valid).fit()
         
-        # 为所有股票计算预测值和残差(包括有缺失值的股票)
+        # 先为所有股票计算预测值和残差(包括有缺失值的股票)
         X_full = X.copy()
         if np.isnan(X_full).any():
             X_full = np.nan_to_num(X_full)
@@ -380,7 +376,7 @@ def neutralize_matrix(factor, barra1, barra2, weights=None, add_constant=True, s
         y_pred = model.predict(X_full)
         residuals[t, :] = y - y_pred
         
-        # 对于原始数据中的NaN，残差也应为NaN
+        # 把对于原始数据中为NaN的票的残差还原为NaN
         residuals[t, ~mask] = np.nan
     
     if standardize_after_neut:
@@ -441,7 +437,7 @@ def evaluate_individual(factor_values, returns, metric, quantiles=10, barra_valu
     if barra_values is not None:
         if barra_usage == 'neutralize':
             # 对因子进行风格中性化
-            factor_values = neutralize_matrix(factor_values,barra_values['rv'],barra_values['liquidity'],weights=weights)
+            factor_values = neutralize_matrix(factor_values,[barra_values['rv'],barra_values['liquidity']],weights=weights)
 
         else:
         # 计算适应度
