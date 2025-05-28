@@ -35,8 +35,10 @@ class DataProcessorBase(ABC):
         self.X_test = None #同上
         self.y_train = None #预测目标的2D numpy array,维度分别是日期和股票
         self.y_test = None
-        self.time_index = None #把测试集的原始dataframe数据转换成2D ndarray之前，先保存下来2D数据对应的行和列标签，最后hof个体的数据还得变回去
-        self.code_columns = None
+        self.test_time_index = None #把测试集的原始dataframe数据转换成2D ndarray之前，先保存下来2D数据对应的行和列标签，最后hof个体的数据还得变回去
+        self.test_code_columns = None
+        self.train_time_index = None #训练集也要存下来两个维度上的index
+        self.train_code_columns = None
         self.weights_data = None #WLS权重(市值开根号)的2D numpy array,维度分别是日期和股票
         self.weights_train = None
         self.weights_test = None
@@ -185,12 +187,22 @@ class DataProcessorBase(ABC):
             raise ValueError("请先设置特征")
         return self.features
 
-    def get_dataset_index(self):
+    def get_trainset_index(self):
         if self.time_index is None:
             raise ValueError("请先设置特征")
-        return self.time_index
+        return self.train_time_index
 
-    def get_dataset_column(self):
+    def get_trainset_column(self):
         if self.code_columns is None:
             raise ValueError("请先设置特征")
-        return self.code_columns
+        return self.train_code_columns
+
+    def get_testset_index(self):
+        if self.time_index is None:
+            raise ValueError("请先设置特征")
+        return self.test_time_index
+
+    def get_testset_column(self):
+        if self.code_columns is None:
+            raise ValueError("请先设置特征")
+        return self.test_code_columns

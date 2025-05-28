@@ -120,8 +120,10 @@ def prepare_data(args):
     for i, col in enumerate(real_feature_list):
         feature_dict[f'x{i+1}'] = col
     
-    dataset_time_index = data_processor.get_dataset_index()
-    dataset_code_column = data_processor.get_dataset_column()
+    trainset_time_index = data_processor.get_trainset_index()
+    trainset_code_column = data_processor.get_trainset_column()
+    testset_time_index = data_processor.get_testset_index()
+    testset_code_column = data_processor.get_testset_column()
 
     data_dict = {
         'y_train': y_train, #股票*时间的2D nparray
@@ -131,7 +133,7 @@ def prepare_data(args):
         'feature_dict': feature_dict, #特征名称和特征别名的对应关系，例如{'x1':'lnto'}
         'train_feature_data': train_feature_data,#{str(x1):股票*时间的2D nparray}
         'test_feature_data': test_feature_data,#{str(x1):股票*时间的2D nparray}
-        'dataset_index_column': [dataset_time_index, dataset_code_column]
+        'dataset_index_column': [trainset_time_index, trainset_code_column, testset_time_index, testset_code_column]
     }
 
     if args.use_barra:
@@ -679,13 +681,15 @@ def run_gp(args, data_dict, device_info):
     #     torch_test_feature_data = convert_to_torch_tensors(data_dict['test_feature_data'])
 
     if global_pool is not None and args.n_jobs > 1:
-        hof_factor_values = global_pool.starmap(base_calculate, [(device_info['device'], pset, data_dict['test_feature_data'], individual) for individual in hof])
-        test_ic_arrays = global_pool.starmap(fitness_module.calculate_ic, [(hof_factor_value, data_dict['y_test']) for hof_factor_value in hof_factor_values])
+        hof_factor_train_values = global_pool.starmap(base_calculate, [(device_info['device'], pset, data_dict['train_feature_data'], individual) for individual in hof])
+        hof_factor_test_values = global_pool.starmap(base_calculate, [(device_info['device'], pset, data_dict['test_feature_data'], individual) for individual in hof])
+        test_ic_arrays = global_pool.starmap(fitness_module.calculate_ic, [(hof_factor_test_value, data_dict['y_test']) for hof_factor_test_value in hof_factor_test_values])
     else:
         warnings.warn("未设置多进程，使用单进程回填并评估hof在测试集的表现")
         from itertools import starmap
-        hof_factor_values = list(starmap(base_calculate, [[device_info['device'], pset, data_dict['test_feature_data'], individual] for individual in hof]))
-        test_ic_arrays = list(starmap(fitness_module.calculate_ic, [[hof_factor_value, data_dict['y_test']] for hof_factor_value in hof_factor_values]))
+        hof_factor_train_values = list(starmap(base_calculate, [[device_info['device'], pset, data_dict['train_feature_data'], individual] for individual in hof]))
+        hof_factor_test_values = list(starmap(base_calculate, [[device_info['device'], pset, data_dict['test_feature_data'], individual] for individual in hof]))
+        test_ic_arrays = list(starmap(fitness_module.calculate_ic, [[hof_factor_test_value, data_dict['y_test']] for hof_factor_test_value in hof_factor_test_values]))
 
     test_ic = [np.abs(np.mean(ic_array)) for ic_array in test_ic_arrays]
     
@@ -706,7 +710,7 @@ def run_gp(args, data_dict, device_info):
     print(f"最佳个体测试集IC: {test_ic[0]:.4f}")
     
     # 保存结果
-    save_results(args, pop, hof, hof_factor_values, log, pset, data_dict, {
+    save_results(args, pop, hof, hof_factor_train_values, hof_factor_test_values, log, pset, data_dict, {
         'best_test_ic': test_ic[0],
         'hof_test_ic': test_ic
     }, elapsed_time, gen, device_info)
@@ -737,7 +741,7 @@ def get_expression_with_original_names(expression_str, feature_mapping):
     
     return result
 
-def save_results(args, pop, hof, hof_values, log, pset, data_dict, test_metrics, elapsed_time, gen, device_info):
+def save_results(args, pop, hof, hof_train_values, hof_test_values, log, pset, data_dict, test_metrics, elapsed_time, gen, device_info):
     """
     保存结果
     
@@ -745,7 +749,7 @@ def save_results(args, pop, hof, hof_values, log, pset, data_dict, test_metrics,
         args: 命令行参数
         pop: 种群
         hof: 名人堂
-        hof_values: 名人堂个体在全数据集上的因子值
+        hof_values: 名人堂个体在测试和训练数据集上的因子值
         log: 日志
         pset: 原始集
         data_dict: 数据字典
@@ -814,11 +818,16 @@ def save_results(args, pop, hof, hof_values, log, pset, data_dict, test_metrics,
     
     # 保存所有名人堂个体的测试集因子值
     icodetoscode = pd.read_csv("/data/home/jiamuxie/test/gp_proj_restructured/secucode_innercode.csv",usecols=['TradingDay','InnerCode','SecuCode'],dtype={'SecuCode':str})
-    for i, ind_values in enumerate(hof_values):
-        time_index = data_dict['dataset_index_column'][0]
-        code_columns = data_dict['dataset_index_column'][1]
-        factor_value_df = pd.DataFrame(data=ind_values, index=time_index, columns=code_columns)
-        factor_value_df = factor_value_df.reset_index().melt(id_vars=time_index.name, var_name=code_columns.name, value_name='factor')
+    for i, (ind_train_values,ind_test_values) in enumerate(zip(hof_train_values,hof_test_values)):
+        train_time_index = data_dict['dataset_index_column'][0]
+        train_code_columns = data_dict['dataset_index_column'][1]
+        test_time_index = data_dict['dataset_index_column'][2]
+        test_code_columns = data_dict['dataset_index_column'][3]
+        train_factor_value_df = pd.DataFrame(data=ind_train_values, index=train_time_index, columns=train_code_columns)
+        test_factor_value_df = pd.DataFrame(data=ind_test_values, index=test_time_index, columns=test_code_columns)
+        train_factor_value_df = train_factor_value_df.reset_index().melt(id_vars=train_time_index.name, var_name=train_code_columns.name, value_name='factor')
+        test_factor_value_df = test_factor_value_df.reset_index().melt(id_vars=test_time_index.name, var_name=test_code_columns.name, value_name='factor')
+        factor_value_df = pd.concat([train_factor_value_df,test_factor_value_df],axis=0, ignore_index=True)
         factor_value_df = pd.merge(factor_value_df, icodetoscode, on=['TradingDay','InnerCode'])[['TradingDay','SecuCode','factor']]
         factor_value_df.to_csv(os.path.join(experiment_dir, f"hof_{i}_{args.random_seed}.csv"),index=False)
 

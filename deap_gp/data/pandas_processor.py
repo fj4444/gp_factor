@@ -148,8 +148,10 @@ class PandasDataProcessor(DataProcessorBase):
             if i == 0:
                 # full_data = self.data.sort_values(by=[time_col,id_col])
                 # pivot_full = full_data.pivot_table(values=col, index=time_col, columns='SecuCode', aggfunc='first')
-                self.time_index = pivot_test.index
-                self.code_columns = pivot_test.columns
+                self.train_time_index = pivot_train.index
+                self.train_code_columns = pivot_train.columns
+                self.test_time_index = pivot_test.index
+                self.test_code_columns = pivot_test.columns
             
 
         # 目标向量
