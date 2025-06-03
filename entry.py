@@ -109,7 +109,7 @@ def parse_args():
     data_group.add_argument('--return_col', type=str, default=data_config['return_col'], help='收益率列名')
     data_group.add_argument('--target_col', type=str, default=data_config['target_col'], help='预测目标列名')
     data_group.add_argument('--feature_cols', type=str, nargs='+', default=data_config['feature_cols'], help='特征列名列表')
-    data_group.add_argument('--cumulative_window', type=int, default=data_config['cumulative_window'], help='预测目标延迟期数')
+    data_group.add_argument('--cumulative_window', type=int, default=data_config['cumulative_window'], help='预测目标累积期数')
     data_group.add_argument('--test_size', type=float, default=data_config['test_size'], help='测试集比例')
     data_group.add_argument('--feature_engineer', action='store_true', help='是否进行特征工程')
     

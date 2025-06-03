@@ -818,6 +818,7 @@ def save_results(args, pop, hof, hof_train_values, hof_test_values, log, pset, d
     
     # 保存所有名人堂个体的测试集因子值
     icodetoscode = pd.read_csv("/data/home/jiamuxie/test/gp_proj_restructured/secucode_innercode.csv",usecols=['TradingDay','InnerCode','SecuCode'],dtype={'SecuCode':str})
+    icodetoscode['TradingDay'] = pd.to_datetime(icodetoscode['TradingDay'])
     for i, (ind_train_values,ind_test_values) in enumerate(zip(hof_train_values,hof_test_values)):
         train_time_index = data_dict['dataset_index_column'][0]
         train_code_columns = data_dict['dataset_index_column'][1]

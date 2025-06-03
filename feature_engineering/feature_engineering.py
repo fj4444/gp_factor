@@ -12,8 +12,8 @@ import numpy as np
 import time
 from typing import Dict, List, Any, Optional, Union, Tuple
 
-from hf_feature import calculate_arpp, calculate_rskew, calculate_rvol, calculate_vhhi
-from apb import apb
+from .hf_feature import calculate_arpp, calculate_rskew, calculate_rvol, calculate_vhhi
+from .apb import apb
 
 def max_n_mean(series, window=20, n=3):
     """计算滚动窗口内最大n个值的均值"""

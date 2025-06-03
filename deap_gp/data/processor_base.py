@@ -65,21 +65,6 @@ class DataProcessorBase(ABC):
         """
         pass
     
-    @abstractmethod
-    def preprocess_data(self, time_col, id_col, fillna_method='forward', drop_duplicates=True, drop_na_threshold=None):
-        """
-        预处理数据
-        
-        参数:
-            fillna_method: 填充缺失值的方法
-            drop_duplicates: 是否删除重复行
-            drop_na_threshold: 删除缺失值比例超过阈值的列
-            
-        返回:
-            预处理后的数据
-        """
-        pass
-    
     def set_features_and_target(self, features, target):
         """
         设置特征和目标
@@ -188,21 +173,21 @@ class DataProcessorBase(ABC):
         return self.features
 
     def get_trainset_index(self):
-        if self.time_index is None:
+        if self.train_time_index is None:
             raise ValueError("请先设置特征")
         return self.train_time_index
 
     def get_trainset_column(self):
-        if self.code_columns is None:
+        if self.train_code_columns is None:
             raise ValueError("请先设置特征")
         return self.train_code_columns
 
     def get_testset_index(self):
-        if self.time_index is None:
+        if self.test_time_index is None:
             raise ValueError("请先设置特征")
         return self.test_time_index
 
     def get_testset_column(self):
-        if self.code_columns is None:
+        if self.test_code_columns is None:
             raise ValueError("请先设置特征")
         return self.test_code_columns
