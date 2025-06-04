@@ -41,6 +41,7 @@ DEFAULT_CONFIG = {
         'crossover_rate': 0.65,
         'mutation_rate': 0.35,
         'shrink_mutation_rate': 0.25,
+        'ic_correlation_threshold': 0.9,
         'hall_of_fame_size': 15,
         'random_seed': 42,
         'patience': 5,

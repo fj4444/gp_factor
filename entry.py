@@ -128,6 +128,7 @@ def parse_args():
     gp_group.add_argument('--correlation_threshold_init', type=float, default=gp_config['correlation_threshold_init'], help='初始种群热启动相关性阈值,超过此值的因子将被过滤')
     gp_group.add_argument('--correlation_threshold', type=float, default=gp_config['correlation_threshold'], help='迭代过程中因子相关性阈值,超过此值的因子将被过滤')
     gp_group.add_argument('--iccorr', action='store_true', help='是否在相关性筛选中使用IC序列相关性')
+    gp_group.add_argument('--ic_correlation_threshold', type=float, default=gp_config['ic_correlation_threshold'], help='IC序列相关性的筛选阈值')
     gp_group.add_argument('--dynamicProb', action='store_true', help='是否在进化中根据筛选后的种群多样性动态调整变异概率')
     gp_group.add_argument('--hall_of_fame_size', type=int, default=gp_config['hall_of_fame_size'], help='名人堂大小')
     gp_group.add_argument('--patience', type=int, default=gp_config['patience'], help='早停轮次限制')

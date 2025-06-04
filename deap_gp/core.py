@@ -267,7 +267,7 @@ def calculate_correlation(factor_matrix_by_row):
             return 0.0
 
 def filter_correlated_individuals_daily(population, factor_values, n_hof, pset, feature_data,  
-                                        correlation_threshold=0.6, use_gpu=False, global_pool=None, n_jobs=1, factor_ic_values=None):
+                                        correlation_threshold=0.6, use_gpu=False, global_pool=None, n_jobs=1, factor_ic_values=None, ic_correlation_threshold=None):
     """
     获得population中相互之间相关性&和名人堂个体之间相关性低于correlation_threshold的所有个体
     
@@ -282,6 +282,7 @@ def filter_correlated_individuals_daily(population, factor_values, n_hof, pset, 
         global_pool: 全局进程池（可选）
         n_jobs: 进程数
         factor_ic_values: population中的因子和hof中的因子的ic序列构成的列表,如果不计算IC相关系数,则传入None
+        ic_correlation_threshold: IC相关系数的阈值，比因子相关性阈值高，因为IC序列的自由度大大降低了，相关性一般都很高
         
     返回:
         过滤后的个体群体,按照适应度从高到低排序
@@ -304,14 +305,14 @@ def filter_correlated_individuals_daily(population, factor_values, n_hof, pset, 
 
     correlation_results = process_map_with_tqdm(calculate_correlation, correlation_tasks, global_pool=global_pool, desc="相似度计算")
     correlation_matrix = np.nanmean(np.stack(correlation_results),axis=0)
-    
+    pop_correlation_matrix = correlation_matrix[:n_pop, :n_pop]
+
     # 计算各因子的IC序列之间的相关性
     if factor_ic_values is not None:
         factor_ic_matrix = np.vstack(factor_ic_values)
         ic_correlation_matrix = calculate_correlation(factor_ic_matrix)
-        correlation_matrix = np.maximum(correlation_matrix, ic_correlation_matrix)
-
-    pop_correlation_matrix = correlation_matrix[:n_pop, :n_pop]
+        # correlation_matrix = np.maximum(correlation_matrix, ic_correlation_matrix)
+        pop_ic_correlation_matrix = ic_correlation_matrix[:n_pop, :n_pop]    
 
     # 基于相关性矩阵过滤种群
     # 按适应度排序，优先保留适应度高的个体
@@ -336,6 +337,8 @@ def filter_correlated_individuals_daily(population, factor_values, n_hof, pset, 
             # 直接使用排序后的索引检查相关性
             if abs(pop_correlation_matrix[idx_i, idx_j]) > correlation_threshold:
                 keep_mask[idx_j] = False  # 标记为删除
+            elif ic_correlation_threshold is not None and abs(pop_ic_correlation_matrix[idx_i, idx_j]) > ic_correlation_threshold:
+                keep_mask[idx_j] = False
 
     print(f"种群内过滤后剩余: {np.sum(keep_mask)}/{n_pop} 个体")
     
@@ -362,7 +365,7 @@ def filter_correlated_individuals_daily(population, factor_values, n_hof, pset, 
     return filtered_population
 
 def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, history, stats=None, halloffame=None, verbose=__debug__, use_warm_start=False, 
-                                    correlation_threshold=0.6, correlation_threshold_init=0.4, iccorr=True, dynamicProb=True, patience=5, min_delta=0.001,pset=None, feature_data=None, 
+                                    correlation_threshold=0.6, correlation_threshold_init=0.4, iccorr=True, ic_correlation_threshold=0.9, dynamicProb=True, patience=5, min_delta=0.001,pset=None, feature_data=None, 
                                     use_gpu=False, n_jobs=1, global_pool=None, experiment_name=None, output_dir=None, barra_values=None, barra_factor=None, barra_usage='correlation', weights=None, competition=True):
     """
     带有早期停止功能的(μ+λ)进化策略
@@ -383,6 +386,7 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
         correlation_threshold: 相关性阈值，超过此值的因子将被过滤
         correlation_threshold_init: 热启动后初始种群的相关性阈值
         iccorr: 是否用因子的IC序列计算相关系数并添加到相关性筛选中
+        ic_correlation_threshold: IC序列相关性阈值
         dynamicProb: 是否根据筛选后的多样性动态调整变异概率大小
         patience: 早期停止耐心值，连续多少代没有改善就停止 
         min_delta: 最小改善阈值，适应度提升小于此值视为没有显著改善
@@ -436,7 +440,8 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
     # 如果使用了热启动 筛选低相关性高适应度个体
     if use_warm_start:
         population = filter_correlated_individuals_daily(
-            population, factor_values, 0, pset, feature_data, correlation_threshold_init, use_gpu, global_pool=global_pool, n_jobs=n_jobs, factor_ic_values=ic_array_list if iccorr else None)[:lambda_]
+            population, factor_values, 0, pset, feature_data, correlation_threshold_init, use_gpu, 
+            global_pool=global_pool, n_jobs=n_jobs, factor_ic_values=ic_array_list if iccorr else None, ic_correlation_threshold=ic_correlation_threshold if iccorr else None)[:lambda_]
     
     experiment_dir = os.path.join(output_dir, experiment_name)
     os.makedirs(experiment_dir,exist_ok=True)
@@ -496,7 +501,8 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
         ic_array_list.extend(hof_ic_array_list)
 
         filtered_offspring = filter_correlated_individuals_daily(
-            offspring, factor_values, len(halloffame), pset, feature_data, correlation_threshold, use_gpu, global_pool=global_pool, n_jobs=n_jobs, factor_ic_values=ic_array_list if iccorr else None)[:lambda_]
+            offspring, factor_values, len(halloffame), pset, feature_data, correlation_threshold, use_gpu, 
+            global_pool=global_pool, n_jobs=n_jobs, factor_ic_values=ic_array_list if iccorr else None, ic_correlation_threshold=ic_correlation_threshold if iccorr else None)[:lambda_]
 
         if dynamicProb:
         # 动态调整进化中的变异概率，在多样性不足时提高多样性
@@ -504,6 +510,10 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
                 delta = (cxpb-0.2)*0.5
                 mutpb += delta
                 cxpb -= delta
+            else:
+                delta = (mutpb-0.2)*0.5
+                mutpb -= delta
+                cxpb += delta
 
         with open(os.path.join(experiment_dir, "generations.txt"), 'a', encoding='utf-8') as file:
             file.write(f"筛选后的第{gen}代种群:\n")
@@ -647,6 +657,7 @@ def run_gp(args, data_dict, device_info):
         correlation_threshold=args.correlation_threshold if hasattr(args, 'correlation_threshold') else 0.6,
         correlation_threshold_init=args.correlation_threshold_init if hasattr(args, 'correlation_threshold_init') else 0.4,
         iccorr=args.iccorr,
+        ic_correlation_threshold=args.ic_correlation_threshold,
         dynamicProb=args.dynamicProb,
         patience=args.patience if hasattr(args, 'patience') else 5,
         min_delta=args.min_delta if hasattr(args, 'min_delta') else 0.001,
