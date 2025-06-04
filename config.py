@@ -38,6 +38,7 @@ DEFAULT_CONFIG = {
         'max_generations': 20,
         'max_depth': 6,
         'tournament_size': 13,
+        'parsimony_size': 1.4,
         'crossover_rate': 0.65,
         'mutation_rate': 0.35,
         'shrink_mutation_rate': 0.25,

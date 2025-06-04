@@ -212,7 +212,7 @@ def setup_deap_toolbox(pset, data_dict, args, history, device_info):
     if args.fitness_metric == 'double':
         toolbox.register("select",tools.selNSGA2)
     elif args.parsimony:
-        toolbox.register("select", tools.selDoubleTournament, fitness_size=args.tournament_size, parsimony_size=1.4, fitness_first=True)
+        toolbox.register("select", tools.selDoubleTournament, fitness_size=args.tournament_size, parsimony_size=args.parsimony_size, fitness_first=True)
     else:
         toolbox.register("select", tools.selTournament, tournsize=args.tournament_size)
 
@@ -555,7 +555,8 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
             for ind in filtered_offspring:
                 for parent_id in list(history.getGenealogy(ind,1).values())[0]:
                     parent_entity = history.genealogy_history[parent_id]
-                    if ind.fitness.values[0] > parent_entity.fitness.values[0]:
+                    if ind.finess.dominates(parent_entity.fitness):#base.fitness的dominates方法既适用于多目标也适用于单目标
+                    # if ind.fitness.values[0] > parent_entity.fitness.values[0]:
                         if parent_entity not in parents_to_remove:
                             parents_to_remove.append(parent_entity)
 

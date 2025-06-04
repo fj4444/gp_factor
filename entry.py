@@ -71,6 +71,16 @@ def load_data_from_db(start_date=None, end_date=None, connection_string=None):
     data['TradingDay'] = pd.to_datetime(data['TradingDay'])
     return data
 
+def check_range(value):
+    try:
+        fvalue = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value} 不是一个有效的浮点数")
+    
+    if fvalue < 1.0 or fvalue > 2.0:
+        raise argparse.ArgumentTypeError(f"{value} 不在允许范围 [1, 2] 内")
+    return fvalue
+
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(description='遗传规划因子挖掘统一入口 (重构版)')
@@ -120,6 +130,7 @@ def parse_args():
     gp_group.add_argument('--max_generations', type=int, default=gp_config['max_generations'], help='最大代数')
     gp_group.add_argument('--max_depth', type=int, default=gp_config['max_depth'], help='树的最大深度')
     gp_group.add_argument('--parsimony',action='store_true', help='是否进行包含复杂度压力的双重锦标赛')
+    gp_group.add_argument('--parsimony_size', type=check_range, default=gp_config['parsimony_size'], help='复杂度压力双重锦标赛中复杂度压力的大小,应该是一个[1,2]之间的值')
     gp_group.add_argument('--tournament_size', type=int, default=gp_config['tournament_size'], help='锦标赛选择的大小')
     gp_group.add_argument('--crossover_rate', type=float, default=gp_config['crossover_rate'], help='交叉概率')
     gp_group.add_argument('--mutation_rate', type=float, default=gp_config['mutation_rate'], help='变异概率')
