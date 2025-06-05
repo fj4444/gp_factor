@@ -555,7 +555,7 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
             for ind in filtered_offspring:
                 for parent_id in list(history.getGenealogy(ind,1).values())[0]:
                     parent_entity = history.genealogy_history[parent_id]
-                    if ind.finess.dominates(parent_entity.fitness):#base.fitness的dominates方法既适用于多目标也适用于单目标
+                    if ind.fitness.dominates(parent_entity.fitness):#base.fitness的dominates方法既适用于多目标也适用于单目标
                     # if ind.fitness.values[0] > parent_entity.fitness.values[0]:
                         if parent_entity not in parents_to_remove:
                             parents_to_remove.append(parent_entity)

@@ -177,8 +177,9 @@ def calculate_rvol(date, data_type='five_minute'):
             SecuCode,
             TradingDay,
             CASE
-                WHEN COUNT(DISTINCT close_price) = 1 THEN 0
-                ELSE STDDEV(return) --如果五分钟数据里没有连在一起的有效数字,return列算出来就全是NULL,导致rvol也是NULL,所以干脆检测到close_price只有一个值或者NULL,直接rvol为0
+                WHEN COUNT(DISTINCT close_price) = 1 THEN 0 --如果五分钟数据里没有连在一起的有效数字,return列算出来就全是NULL,导致rvol也是NULL,所以干脆检测到close_price只有一个值或者NULL,直接rvol为0
+                WHEN COUNT(DISTINCT return) = 1 THEN 0 --如果全天只有一个return,也无法计算rvol
+                ELSE STDDEV(return) 
             END AS rvol
         FROM intraday_returns
         WHERE return IS NOT NULL
@@ -252,7 +253,7 @@ def calculate_arpp(date, data_type='five_minute'):
                 MIN(filled_price) as min_price,
                 MAX(filled_price) as max_price
             FROM filled_data
-            WHERE start_time < 1457
+            WHERE start_time < 1455
             GROUP BY SecuCode, TradingDay
         )
         SELECT 
