@@ -15,14 +15,7 @@ class LimitedParetoFront():
         self.similar = similar
 
     def update(self, population):
-        """Update the Pareto front hall of fame with the *population* by adding
-        the individuals from the population that are not dominated by the hall
-        of fame. If any individual in the hall of fame is dominated it is
-        removed.
-
-        :param population: A list of individual with a fitness attribute to
-                           update the hall of fame with.
-        """
+        assert len(population)>=self.maxsize, "设置的优胜种群大小不应超过整体种群"
         pop = deepcopy(population)
         pop.extend(self)
         self.clear()

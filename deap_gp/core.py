@@ -612,9 +612,9 @@ def run_gp(args, data_dict, device_info):
     history = tools.History()
     toolbox = setup_deap_toolbox(pset, data_dict, args, history, device_info)
     if args.fitness_metric=='double':
-        # from .base.LimitedParetoFront import LimitedParetoFront
-        # hof = LimitedParetoFront(args.hall_of_fame_size if hasattr(args, 'hall_of_fame_size') else 20)
-        hof = tools.ParetoFront()
+        from .base.LimitedParetoFront import LimitedParetoFront
+        hof = LimitedParetoFront(args.hall_of_fame_size if hasattr(args, 'hall_of_fame_size') else 20)
+        # hof = tools.ParetoFront()
     else:
         hof = tools.HallOfFame(args.hall_of_fame_size if hasattr(args, 'hall_of_fame_size') else 20)
     
