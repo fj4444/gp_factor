@@ -1,6 +1,8 @@
 from copy import deepcopy
 from deap import tools
 
+# !!这个是自己定义的类，对DEAP里的帕累托前沿的包装，原生的pareto front只能维护第一前沿，这里的办法就是每次维护第一前沿，如果数量不够就把剩下的个体归拢起来再继续取第一前沿
+
 class LimitedParetoFront():
     """可以指定包含个体数量的ParetoFront Hall of fame, 其中个体可能来自任何一个前沿面,
     只保证每次更新后找到的个体, 不被 新的population个体和旧的hof个体组成的集合 的剩余个体支配,

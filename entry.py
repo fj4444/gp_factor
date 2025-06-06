@@ -178,6 +178,8 @@ if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=FutureWarning)
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     args = parse_args()
+
+    assert args.cxpb + args.mutpb <= 1, "cxpb(交叉概率)与mutpb(子树/提升变异概率)之和应当<=1"
  
     if not args.use_db and args.data_file is None:
         raise ValueError("必须指定数据源 (--data_file 或 --use_db)")

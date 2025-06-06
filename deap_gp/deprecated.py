@@ -1,5 +1,5 @@
 """
-开发过程中弃置的函数，留存供参考
+!!开发过程中弃置的函数，都是曾经工作流里的一部分，是可以正确运行的，留存供参考
 """
 def filter_correlated_individuals(population, factor_values, halloffame, pset, feature_data, correlation_threshold_hof=0.7, correlation_threshold_pop=0.85, use_gpu=False, global_pool=None, n_jobs=1):
     """

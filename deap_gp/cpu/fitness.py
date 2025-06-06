@@ -233,6 +233,8 @@ def calculate_ic(factor_values, returns):
     
     return np.array(ics)
 
+# !!自行计算的NDCG,对研报里的NDCG其实有一点改动,研报里似乎默认所有因子都是正向因子(不知道是不是前序处理过了),
+# !!所以默认取因子十分组的前五组计算收益排名分数;但是gp挖掘出的因子不见得是正向还是负向,所以这里计算时会取前后五组分别尝试计算收益排名分数,取较大值
 def calculate_NDCG(factor_values, returns, quantiles=10):
     """
     计算raw NDCG@k数据,是一个长度与天数相等的array,k=int(quantiles/2)

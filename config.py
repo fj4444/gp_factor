@@ -40,7 +40,7 @@ DEFAULT_CONFIG = {
         'tournament_size': 13,
         'parsimony_size': 1.4,
         'crossover_rate': 0.65,
-        'mutation_rate': 0.35,
+        'mutation_rate': 0.35, # !!这两个加起来应该<=1,如果<1,多出来的概率会用于reproduction,也就是从亲代中随机找一个个体直接加入子代
         'shrink_mutation_rate': 0.25,
         'ic_correlation_threshold': 0.9,
         'hall_of_fame_size': 15,

@@ -1,3 +1,6 @@
+'''
+cpu/operators.py中的方法可以用from deap_gp import cpu_ops的方法调用,方便性能测试
+'''
 from deap_gp import cpu_ops
 from deap_gp import gpu_ops
 

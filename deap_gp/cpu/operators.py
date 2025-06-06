@@ -6,6 +6,8 @@ CPU算子库
 - 基本数学函数算子 (log、sqrt等)
 - 基本时序算子 (移动平均、滞后等)
 - 基本截面算子 (排名、标准化等)
+
+!!算子的的具体实现方面,早期写的算子可能会包含对dataframe的支持,后续数据流中取缔dataframe之后就只写了numpy array的函数了
 """
 
 import numpy as np

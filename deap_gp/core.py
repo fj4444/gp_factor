@@ -154,8 +154,8 @@ def base_calculate(device_name, pset, feature_data, ind):
 # 基本评估函数
 def base_evaluate(device_name, returns, metric, value):
     """
-    这个函数经过了多层包装，在toolbox的register获得了前三个参数，在toolbox.map才能获得最后一个参数，也只能获得一个参数
-    所以因子值ndarray和包含风格因子值ndarray的字典作为一个tuple一起传到values里了，如果初始设置没有要求使用风格因子，那么value就是(factor_value,None)
+    !!这个函数经过了多层包装，在toolbox的register获得了前三个参数，在toolbox.map才能获得最后一个参数，也只能获得一个参数
+    !!所以因子值ndarray和包含风格因子值ndarray的字典作为一个tuple一起传到values里了，如果初始设置没有要求使用风格因子，那么value就是(factor_value,None)
     """
     if device_name=='gpu':
         from .gpu import fitness as fitness_module
@@ -411,7 +411,7 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
     # 评估初始种群
     if not use_gpu:
         factor_values = toolbox.map(toolbox.calculate, population, global_pool=global_pool, desc="初始种群-回填因子值")
-        # 实验中发现诸如rank_sub(x54, x54)这样的因子，由于因子值只有0，在相关性计算的时候必然算出NaN，从而通过筛选留下，会持续污染population。应该把因子值只有少数几种值,缺少区分度的因子直接从种群里删掉
+        # !!实验中发现诸如rank_sub(x54, x54)这样的因子，由于因子值只有0，在相关性计算的时候必然算出NaN，从而通过筛选留下，会持续污染population。应该把因子值只有少数几种值,缺少区分度的因子直接从种群里删掉
         useless_factor_indice = [i for i,factor_value in enumerate(factor_values) if (len(np.unique(factor_value))<=5)]
         
         for index in sorted(useless_factor_indice, reverse=True):
@@ -420,8 +420,9 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
             
         print(f"删去无用因子后后剩余: {len(population)}/{len(population)+len(useless_factor_indice)} 个体")
 
-        #  factor_values是list, 每个元素都是一个因子值的ndarray, 应该把每个元素包装成(factor_value, barra_values)的元组,
-        #  其中barra_values应该是用到的所有风格因子的ndarray组成的dict,如果设置里不要求风格因子,barra_values=None
+        #  !!factor_values是list, 每个元素都是一个因子值的ndarray, 应该把每个元素包装成(factor_value, barra_values, barra_factor, barra_usage, weights)的元组,
+        #  其中barra_values应该是用到的所有风格因子的ndarray组成的dict,如果设置里不要求风格因子,barra_values=None, barra_factor是需要进行计算的barra因子的名字组成的列表,
+        #  barra_usage是'neutralize'或者'correlation',代表barra的参与方式, weights是WLS的权重,如果不用barra的话weights也是None
         factor_barra_values = [(factor_value, barra_values, barra_factor, barra_usage, weights) for factor_value in factor_values]
         fitness, ic_array_tuple = list(zip(*toolbox.map(toolbox.evaluate, factor_barra_values, global_pool=global_pool, desc="初始种群-评估适应度")))
 
@@ -472,8 +473,8 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
         print(f"本代有{len(population)}个个体作为亲代")
         offspring = algorithms.varOr(population, toolbox, lambda_, cxpb, mutpb)        
         # 评估子代
-        # 这里对全部offspring中的个体都进行回填。严格来说，如果cxpb+mutpb<1，是有机会节省一些计算的，因为多余的概率会用于reproduction，直接从亲代里随机选几个变成子代
-        # 这些直接变成子代的个体，本身已经回填过一次，但是因子值不方便找到，还是跟着重算一次
+        # !!这里对全部offspring中的个体都进行回填。如果cxpb+mutpb<1，是有机会节省一些计算的(也就是DEAP要求交叉和子树变异的概率之和<=1即可,因为多余的概率会用于reproduction,也就是直接从亲代里随机选几个变成子代)
+        # !!这些直接变成子代的个体，本身已经回填过一次，但是要找到它们的因子值还需要索引，因子值不方便找，干脆还是跟着重算一次，在reproduction的概率不大的时候计算开销有限
         factor_values = toolbox.map(toolbox.calculate, offspring, global_pool=global_pool, desc=f"第{gen}代-回填因子值")
         useless_factor_indice = [i for i,factor_value in enumerate(factor_values) if (len(np.unique(factor_value))<=5)]
         
@@ -505,7 +506,7 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
             global_pool=global_pool, n_jobs=n_jobs, factor_ic_values=ic_array_list if iccorr else None, ic_correlation_threshold=ic_correlation_threshold if iccorr else None)[:lambda_]
 
         if dynamicProb:
-        # 动态调整进化中的变异概率，在多样性不足时提高多样性
+        # !!动态调整进化中的变异概率，在多样性不足时提高多样性
             if len(filtered_offspring) < mu:
                 delta = (cxpb-0.2)*0.5
                 mutpb += delta
@@ -525,7 +526,7 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
         halloffame.update(filtered_offspring)  
         offspring.extend(old_hof)
         hofer_indices = [offspring.index(hofer) if hofer in offspring else np.inf for hofer in halloffame]
-        # hof个体都应该来自上一轮hof或者本轮生成的子代，index不应该出现np.inf，如果出现了np.inf会被catch并报错
+        # !!hof个体都应该来自上一轮hof或者本轮生成的子代，index不应该出现np.inf，如果出现了np.inf会被catch并报错
         try:
             hof_factor_values = [factor_values[i] for i in hofer_indices]
             hof_ic_array_list = [ic_array_list[i] for i in hofer_indices]
@@ -550,7 +551,8 @@ def eaMuPlusLambdaWithEarlyStopping(population, toolbox, mu, lambda_, cxpb, mutp
 
         # 选择下一次遗传的亲代
         if competition:
-        # 父子竞争,对所有进入filtered_offspring的子代,如果发现适应度高于亲代,就把亲代从population中去掉
+        # !!父子竞争,对所有进入filtered_offspring的子代,如果发现适应度高于亲代,就把亲代从population中去掉
+        # TODO:
             parents_to_remove = []
             for ind in filtered_offspring:
                 for parent_id in list(history.getGenealogy(ind,1).values())[0]:
